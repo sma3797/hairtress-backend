@@ -223,6 +223,31 @@ exports.resetPassword = async (req, res, next) => {
         return next(new HttpError("Something went wrong! Try again later...", 500));
     }
 };
+exports.getUser = async (req, res, next) => {
+    let { userId } = req.body;
+    let existingUser;
+    console.log("userId", userId);
+    try {
+        existingUser = await User.findOne({ _id: userId });
+    } catch (error) {
+        const err = new HttpError("Something went wrong", 500);
+        return next(err);
+    }
+    if (!existingUser) {
+        return next(new HttpError("Something went wrong!", 500));
+    }
+    console.log("existingUser", existingUser);
+    res.status(200).json({
+        user: {
+            fname: existingUser.fname,
+            lname: existingUser.lname,
+            email: existingUser.email,
+            quiz: existingUser.quiz,
+            phone_number: existingUser.phone_number,
+            address: existingUser.address,
+        },
+    });
+};
 exports.changeInformation = async (req, res, next) => {
     const errors = validationResult(req);
     let { fname, lname, address, phone_number, userId } = req.body;

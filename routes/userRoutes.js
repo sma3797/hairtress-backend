@@ -24,7 +24,7 @@ router.get("/all-product", userControllers.allProducts); // Checking route
 router.post("/all-products", userControllers.allProducts);
 
 // router.use(checkAuth);
-
+router.post("/get-user", userControllers.getUser);
 router.post(
     "/change-information",
     [
