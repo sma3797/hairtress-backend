@@ -424,17 +424,18 @@ exports.email = async (req, res, next) => {
                 return next(new HttpError("Valid email is required", 422));
             }
         });
-    }
-    const { email } = req.body;
-    let emailToSaved = new Email({
-        email: email.toLowerCase(),
-    });
-    try {
-        let emailSaved = await emailToSaved.save();
-        res.status(200).json({ message: "Ok", email: emailSaved._id ? true : false });
-    } catch (error) {
-        const err = new HttpError("Something went wrong", 500);
-        return next(err);
+    } else {
+        const { email } = req.body;
+        let emailToSaved = new Email({
+            email: email.toLowerCase(),
+        });
+        try {
+            let emailSaved = await emailToSaved.save();
+            res.status(200).json({ message: "Ok", email: emailSaved._id ? true : false });
+        } catch (error) {
+            const err = new HttpError("Something went wrong", 500);
+            return next(err);
+        }
     }
 };
 
