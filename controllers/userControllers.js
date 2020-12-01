@@ -418,13 +418,16 @@ exports.quizSubmit = async (req, res, next) => {
 };
 exports.email = async (req, res, next) => {
     const errors = validationResult(req);
+    let email = true;
     if (!errors.isEmpty()) {
         errors.errors.map((err) => {
             if (err.param === "email") {
+                email = false;
                 return next(new HttpError("Valid email is required", 422));
             }
         });
-    } else {
+    }
+    if (email) {
         const { email } = req.body;
         let emailToSaved = new Email({
             email: email.toLowerCase(),
