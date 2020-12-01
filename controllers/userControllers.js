@@ -5,6 +5,7 @@ const User = require("../models/user");
 const Quiz = require("../models/quiz");
 const Product = require("../models/product");
 const Order = require("../models/order");
+const Email = require("../models/email");
 const HttpError = require("../models/http-error").HttpError;
 
 const { validationResult } = require("express-validator");
@@ -77,7 +78,7 @@ exports.signup = async (req, res, next) => {
         return next(err);
     } else {
         const newUser = new User({
-            email,
+            email: email.toLowerCase(),
             fname,
             lname,
             password: hashedPassword,
@@ -115,7 +116,7 @@ exports.login = async (req, res, next) => {
     let existingUser;
 
     try {
-        existingUser = await User.findOne({ email });
+        existingUser = await User.findOne({ email: email.toLowerCase() });
     } catch (error) {
         const err = new HttpError("Something went wrong, log in fails!", 500);
         return next(err);
@@ -412,6 +413,27 @@ exports.quizSubmit = async (req, res, next) => {
         } catch (error) {}
     } else {
         const err = new HttpError("User doesn't exist", 500);
+        return next(err);
+    }
+};
+exports.email = async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        errors.errors.map((err) => {
+            if (err.param === "email") {
+                return next(new HttpError("Valid email is required", 422));
+            }
+        });
+    }
+    const { email } = req.body;
+    let emailToSaved = new Email({
+        email: email.toLowerCase(),
+    });
+    try {
+        let emailSaved = await emailToSaved.save();
+        res.status(200).json({ message: "Ok", email: emailSaved._id ? true : false });
+    } catch (error) {
+        const err = new HttpError("Something went wrong", 500);
         return next(err);
     }
 };

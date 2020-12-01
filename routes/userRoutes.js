@@ -15,7 +15,7 @@ router.post(
     ],
     userControllers.signup,
 );
-router.post("/login", [check("password").isLength({ min: 6 }), check("email").normalizeEmail().isEmail()], userControllers.login);
+router.post("/login", [check("password").isLength({ min: 6 }), check("email").isEmail()], userControllers.login);
 router.post("/reset", userControllers.reset);
 router.post("/reset-password/:token", [check("password").isLength({ min: 6 })], userControllers.resetPassword);
 router.post("/change-password", [check("password").isLength({ min: 6 })], userControllers.changePassword);
@@ -23,6 +23,7 @@ router.post("/change-password", [check("password").isLength({ min: 6 })], userCo
 router.get("/all-product", userControllers.allProducts); // Checking route
 router.post("/all-products", userControllers.allProducts);
 
+router.post("/email", [check("email").isEmail()], userControllers.email);
 // router.use(checkAuth);
 router.post("/get-user", userControllers.getUser);
 router.post(
