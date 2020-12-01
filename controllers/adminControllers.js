@@ -9,6 +9,7 @@ const ProductType = require("../models/product_type");
 const ProductBestHairType = require("../models/product_best_hair_type");
 const ProductCompany = require("../models/product_company");
 const ProductTag = require("../models/product_tag");
+const Email = require("../models/email");
 const HttpError = require("../models/http-error").HttpError;
 
 const { validationResult } = require("express-validator");
@@ -279,6 +280,16 @@ exports.allUsers = async (req, res, next) => {
         return next(err);
     }
     res.status(200).json({ message: "Ok", users });
+};
+exports.allEmails = async (req, res, next) => {
+    let emails;
+    try {
+        emails = await Email.find({}, undefined, {}).sort({ createdAt: -1 });
+    } catch (error) {
+        const err = new HttpError("Something went wrong", 500);
+        return next(err);
+    }
+    res.status(200).json({ message: "Ok", emails });
 };
 
 exports.addProductType = async (req, res, next) => {

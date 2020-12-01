@@ -16,6 +16,7 @@ router.post("/reset-password/:token", [check("password").isLength({ min: 6 })], 
 
 router.use(checkAuth);
 
+router.post("/all-emails", adminControllers.allEmails);
 router.post("/all-users", adminControllers.allUsers);
 
 router.post("/change-password", [check("password").isLength({ min: 6 })], adminControllers.changePassword);
