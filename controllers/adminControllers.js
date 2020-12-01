@@ -462,6 +462,7 @@ exports.addProduct = async (req, res, next) => {
         product_tag,
         product_best_hair_type,
         misc_product_data,
+        picture,
     } = req.body;
     let product = new Product({
         product_name,
@@ -473,6 +474,7 @@ exports.addProduct = async (req, res, next) => {
         product_tag,
         product_best_hair_type,
         misc_product_data,
+        picture,
     });
     try {
         const newProduct = await product.save();
