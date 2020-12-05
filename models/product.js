@@ -27,6 +27,12 @@ const productSchema = new Schema({
     crafts: {
         type: Boolean,
     },
+    studies: {
+        type: Boolean,
+    },
+    products: {
+        type: Boolean,
+    },
     product_tag: {
         ref: "ProductTag",
         type: Schema.Types.ObjectId,

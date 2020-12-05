@@ -444,15 +444,31 @@ exports.email = async (req, res, next) => {
 
 exports.allProducts = async (req, res, next) => {
     const skip = req.query.skip && /^\d+$/.test(req.query.skip) ? Number(req.query.skip) : 0;
-    const { query } = req.body;
+    const { query, type } = req.body;
     console.log(query);
     const regex = new RegExp(escapeRegex(query ? query : ""), "gi");
     let products;
     try {
-        products = await Product.find({ product_name: regex }, undefined, {
-            skip,
-            limit: 10,
-        }).sort({ createdAt: -1 });
+        if (type === "c")
+            products = await Product.find({ product_name: regex, crafts: true }, undefined, {
+                skip,
+                limit: 10,
+            }).sort({ createdAt: -1 });
+        if (type === "p")
+            products = await Product.find({ product_name: regex, pros: true }, undefined, {
+                skip,
+                limit: 10,
+            }).sort({ createdAt: -1 });
+        if (type === "s")
+            products = await Product.find({ product_name: regex, studies: true }, undefined, {
+                skip,
+                limit: 10,
+            }).sort({ createdAt: -1 });
+        if (type === "pr")
+            products = await Product.find({ product_name: regex, products: true }, undefined, {
+                skip,
+                limit: 10,
+            }).sort({ createdAt: -1 });
     } catch (error) {
         const err = new HttpError("Something went wrong", 500);
         return next(err);

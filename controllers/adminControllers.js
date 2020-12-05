@@ -479,6 +479,8 @@ exports.addProduct = async (req, res, next) => {
         product_name,
         pros: parseInt(category) === 1 ? true : undefined,
         crafts: parseInt(category) === 2 ? true : undefined,
+        studies: parseInt(category) === 3 ? true : undefined,
+        products: parseInt(category) === 4 ? true : undefined,
         product_company,
         product_price,
         product_type,
