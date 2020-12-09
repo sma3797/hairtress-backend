@@ -30,13 +30,13 @@ router.use(checkAuth);
 router.post("/get-user", userControllers.getUser);
 router.post(
     "/change-information",
+    imageUpload.single("picture"),
     [
         check("fname").not().isEmpty(),
         check("lname").not().isEmpty(),
         // check("address").isLength({ min: 6 }),
         // check("phone_number").isMobilePhone("any"),
     ],
-    imageUpload.single("picture"),
     userControllers.changeInformation,
 );
 

@@ -19,8 +19,8 @@ const sendGrid = require("nodemailer-sendgrid-transport");
 
 const AWS = require("aws-sdk");
 const s3 = new AWS.S3({
-    // accessKeyId: process.env.ID,
-    // secretAccessKey: process.env.SECRET,
+    accessKeyId: process.env.AWS_ID,
+    secretAccessKey: process.env.SECRET,
 });
 
 const transporter = nodemailer.createTransport(
@@ -246,14 +246,17 @@ exports.getUser = async (req, res, next) => {
             quiz: existingUser.quiz,
             phone_number: existingUser.phone_number,
             address: existingUser.address,
+            picture: existingUser.picture,
         },
     });
 };
 exports.changeInformation = async (req, res, next) => {
     const errors = validationResult(req);
     let { fname, lname, address, phone_number, userId } = req.body;
+    console.log("fname, lname, address, phone_number, userId", fname, lname, address, phone_number, userId);
     if (!errors.isEmpty()) {
         errors.errors.map((err) => {
+            console.log("err", err);
             if (err.param === "fname") {
                 return next(new HttpError("First Name is required", 422));
             }
