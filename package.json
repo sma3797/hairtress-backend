@@ -32,6 +32,7 @@
 		"nodemailer": "^6.4.11",
 		"nodemailer-sendgrid-transport": "^0.2.0",
 		"pngquant": "^3.1.0",
+		"read-excel-file": "^4.1.0",
 		"twilio": "^3.49.2",
 		"uuid": "^8.3.0"
 	}
