@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const readXlsxFile = require("read-excel-file/node");
+require("dotenv").config();
 
 const Product = require("./models/product");
 
@@ -74,8 +75,8 @@ mongoose
         // const products = await Product.find({ product: true }).sort({ createdAt: 1 });
         // const products = await Product.find({ crafts: true }).sort({ createdAt: 1 });
         // const products = await Product.find({ pros: true }).sort({ createdAt: 1 });
-        const products = await Product.find({ studies: true }).sort({ createdAt: 1 });
-        products.map((i) => console.log(i._id, i.name));
+        // const products = await Product.find({ studies: true }).sort({ createdAt: 1 });
+        // products.map((i) => console.log(i._id, i.name));
         // readXlsxFile("./product.xlsx").then((rows) => {
         //     // console.log("rows", rows);
         //     rows.map(async (i) => {

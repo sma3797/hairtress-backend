@@ -17,6 +17,7 @@
 		"child-process": "^1.0.2",
 		"compress-images": "^1.9.5",
 		"crypto-js": "^4.0.0",
+		"dotenv": "^8.2.0",
 		"express": "^4.17.1",
 		"express-queue": "0.0.12",
 		"express-validator": "^6.5.0",
