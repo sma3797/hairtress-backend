@@ -13,8 +13,8 @@ router.post(
 router.post("/login", [check("password").isLength({ min: 6 }), check("email").normalizeEmail().isEmail()], adminControllers.login);
 router.post("/reset", adminControllers.reset);
 router.post("/reset-password/:token", [check("password").isLength({ min: 6 })], adminControllers.resetPassword);
-
-router.use(checkAuth);
+//
+// router.use(checkAuth);
 
 router.post("/all-emails", adminControllers.allEmails);
 router.post("/all-users", adminControllers.allUsers);
@@ -34,8 +34,8 @@ router.post("/edit-product-best-hair-type", adminControllers.editProductBestHair
 router.post("/get-product-stuff", adminControllers.getProductStuff);
 
 router.post("/all-products", adminControllers.allProducts);
-router.post("/add-product", adminControllers.addProduct);
+router.post("/add-product", imageUpload.single("picture"), adminControllers.addProduct);
 router.post("/delete-product", adminControllers.deleteProduct);
-router.post("/edit-product", adminControllers.editProduct);
+router.post("/edit-product", imageUpload.single("picture"), adminControllers.editProduct);
 
 module.exports = router;

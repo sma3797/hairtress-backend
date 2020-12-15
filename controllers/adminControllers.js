@@ -22,10 +22,11 @@ const sendGrid = require("nodemailer-sendgrid-transport");
 // const client = require("twilio")(process.env.ACCOUNTSID, process.env.AUTHTOKEN);
 
 const AWS = require("aws-sdk");
-// const s3 = new AWS.S3({
-//     accessKeyId: process.env.ID,
-//     secretAccessKey: process.env.SECRET,
-// });
+const BUCKET_NAME_IMAGES = "images-rizipt";
+const s3 = new AWS.S3({
+    accessKeyId: process.env.AWS_ID,
+    secretAccessKey: process.env.SECRET,
+});
 
 const transporter = nodemailer.createTransport(
     sendGrid({
@@ -446,16 +447,51 @@ exports.editProductBestHairType = async (req, res, next) => {
     res.status(200).json({ message: "Ok", edited });
 };
 
+// exports.allProducts = async (req, res, next) => {
+//     const skip = req.query.skip && /^\d+$/.test(req.query.skip) ? Number(req.query.skip) : 0;
+//     console.log("request", req.body);
+//     const { query } = req.body;
+//     const regex = new RegExp(escapeRegex(query ? query : ""), "gi");
+//     let products;
+//     try {
+//         products = await Product.find({ product_name: regex }, undefined, {
+//             skip,
+//             limit: 10,
+//         }).sort({ createdAt: -1 });
+//     } catch (error) {
+//         const err = new HttpError("Something went wrong", 500);
+//         return next(err);
+//     }
+//     res.status(200).json({ message: "Ok", products });
+// };
+
 exports.allProducts = async (req, res, next) => {
     const skip = req.query.skip && /^\d+$/.test(req.query.skip) ? Number(req.query.skip) : 0;
-    const { query } = req.body;
+    const { query, type } = req.body;
+    console.log("req.body", req.body);
     const regex = new RegExp(escapeRegex(query ? query : ""), "gi");
     let products;
     try {
-        products = await Product.find({ product_name: regex }, undefined, {
-            skip,
-            limit: 10,
-        }).sort({ createdAt: -1 });
+        if (type === "c")
+            products = await Product.find({ name: regex, crafts: true }, undefined, {
+                skip,
+                limit: 10,
+            }).sort({ createdAt: -1 });
+        if (type === "p")
+            products = await Product.find({ name: regex, pros: true }, undefined, {
+                skip,
+                limit: 10,
+            }).sort({ createdAt: -1 });
+        if (type === "s")
+            products = await Product.find({ name: regex, studies: true }, undefined, {
+                skip,
+                limit: 10,
+            }).sort({ createdAt: -1 });
+        if (type === "pr")
+            products = await Product.find({ name: regex, product: true }, undefined, {
+                skip,
+                limit: 10,
+            }).sort({ createdAt: -1 });
     } catch (error) {
         const err = new HttpError("Something went wrong", 500);
         return next(err);
@@ -464,51 +500,134 @@ exports.allProducts = async (req, res, next) => {
 };
 
 exports.addProduct = async (req, res, next) => {
-    const {
-        product_name,
-        category,
-        product_company,
-        product_price,
+    let {
+        name,
+        pros,
+        crafts,
+        product,
+        studies,
         product_type,
-        product_tag,
-        product_best_hair_type,
-        misc_product_data,
-        picture,
+        hair_type,
+        density,
+        porosity,
+        link1,
+        link2,
+        link3,
+        product_company,
+        processing,
+        creator,
+        length,
+        desc,
     } = req.body;
-    let product = new Product({
-        product_name,
-        pros: parseInt(category) === 1 ? true : undefined,
-        crafts: parseInt(category) === 2 ? true : undefined,
-        studies: parseInt(category) === 3 ? true : undefined,
-        products: parseInt(category) === 4 ? true : undefined,
-        product_company,
-        product_price,
-        product_type,
-        product_tag,
-        product_best_hair_type,
-        misc_product_data,
-        picture,
-    });
-    try {
-        const newProduct = await product.save();
-        res.status(200).json({ message: "Ok", newProduct });
-    } catch (error) {
-        const err = new HttpError("Something went wrong", 500);
-        return next(err);
+    let fileURL, productToCreate;
+    const fileContent = req.file && fs.readFileSync(req.file.path);
+    const params = req.file && {
+        Bucket: BUCKET_NAME_IMAGES,
+        Key: req.userData.fileKey,
+        Body: fileContent,
+    };
+    if (fileContent) {
+        s3.upload(params, async (err, data) => {
+            if (err) {
+                throw err;
+            } else if (data) {
+                productToCreate = new Product({
+                    name,
+                    pros,
+                    crafts,
+                    product,
+                    studies,
+                    product_type,
+                    hair_type,
+                    density,
+                    porosity,
+                    link1,
+                    link2,
+                    link3,
+                    product_company,
+                    processing,
+                    creator,
+                    length,
+                    picture: data.Location,
+                    desc,
+                });
+                try {
+                    const newProduct = await productToCreate.save();
+                    res.status(200).json({ message: "Ok", newProduct });
+                } catch (error) {
+                    console.log("error", error);
+                    const err = new HttpError("Something went wrong", 500);
+                    return next(err);
+                }
+                try {
+                    if (req.file) {
+                        fs.unlink(req.file.path, (err) => {});
+                    }
+                } catch (error) {
+                    console.log("error", error);
+                    const err = new HttpError("Something went wrong", 500);
+                    return next(err);
+                }
+            }
+        });
+    } else {
+        productToCreate = new Product({
+            name,
+            pros,
+            crafts,
+            product,
+            studies,
+            product_type,
+            hair_type,
+            density,
+            porosity,
+            link1,
+            link2,
+            link3,
+            product_company,
+            processing,
+            creator,
+            length,
+            desc,
+        });
+        try {
+            const newProduct = await productToCreate.save();
+            res.status(200).json({ message: "Ok", newProduct });
+        } catch (error) {
+            console.log("error", error);
+            const err = new HttpError("Something went wrong", 500);
+            return next(err);
+        }
     }
 };
 exports.editProduct = async (req, res, next) => {
     const {
         productId,
-        product_name,
-        category,
-        product_company,
-        product_price,
+        name,
+        pros,
+        crafts,
+        product,
+        studies,
         product_type,
-        product_tag,
-        product_best_hair_type,
-        misc_product_data,
+        hair_type,
+        density,
+        porosity,
+        link1,
+        link2,
+        link3,
+        product_company,
+        processing,
+        creator,
+        length,
+        picture,
+        desc,
     } = req.body;
+    const fileContent = req.file && fs.readFileSync(req.file.path);
+    const params = req.file && {
+        Bucket: BUCKET_NAME_IMAGES,
+        Key: req.userData.fileKey,
+        Body: fileContent,
+    };
     try {
         product = await Product.findOne({ _id: productId });
     } catch (error) {
@@ -516,17 +635,62 @@ exports.editProduct = async (req, res, next) => {
         return next(err);
     }
     if (product) {
-        product.product_name = product_name;
-        product.product_company = product_company;
-        product.pros = category === 1 ? true : undefined;
-        product.crafts = category === 2 ? true : undefined;
-        product.product_price = product_price;
-        product.product_type = product_type;
-        product.product_tag = product_tag;
-        product.product_best_hair_type = product_best_hair_type;
-        product.misc_product_data = misc_product_data;
-        const newProduct = await product.save();
-        res.status(200).json({ message: "Ok", productEdited: newProduct });
+        if (fileContent) {
+            s3.upload(params, async (err, data) => {
+                if (err) {
+                    throw err;
+                } else if (data) {
+                    product.name = name ? name : undefined;
+                    product.pros = pros ? pros : undefined;
+                    product.crafts = crafts ? crafts : undefined;
+                    product.product = product ? product : undefined;
+                    product.studies = studies ? studies : undefined;
+                    product.product_type = product_type ? product_type : undefined;
+                    product.hair_type = hair_type ? hair_type : undefined;
+                    product.density = density ? density : undefined;
+                    product.porosity = porosity ? porosity : undefined;
+                    product.link1 = link1 ? link1 : undefined;
+                    product.link2 = link2 ? link2 : undefined;
+                    product.link3 = link3 ? link3 : undefined;
+                    product.product_company = product_company ? product_company : undefined;
+                    product.processing = processing ? processing : undefined;
+                    product.creator = creator ? creator : undefined;
+                    product.length = length ? length : undefined;
+                    product.picture = picture ? picture : undefined;
+                    product.desc = desc ? desc : undefined;
+                    const newProduct = await product.save();
+                    res.status(200).json({ message: "Ok", productEdited: newProduct });
+                    try {
+                        if (req.file) {
+                            fs.unlink(req.file.path, (err) => {});
+                        }
+                    } catch (error) {
+                        const err = new HttpError("Something went wrong", 500);
+                        return next(err);
+                    }
+                }
+            });
+        } else {
+            product.name = name ? name : undefined;
+            product.pros = pros ? pros : undefined;
+            product.crafts = crafts ? crafts : undefined;
+            product.product = product ? product : undefined;
+            product.studies = studies ? studies : undefined;
+            product.product_type = product_type ? product_type : undefined;
+            product.hair_type = hair_type ? hair_type : undefined;
+            product.density = density ? density : undefined;
+            product.porosity = porosity ? porosity : undefined;
+            product.link1 = link1 ? link1 : undefined;
+            product.link2 = link2 ? link2 : undefined;
+            product.link3 = link3 ? link3 : undefined;
+            product.product_company = product_company ? product_company : undefined;
+            product.processing = processing ? processing : undefined;
+            product.creator = creator ? creator : undefined;
+            product.length = length ? length : undefined;
+            product.picture = picture ? picture : undefined;
+            const newProduct = await product.save();
+            res.status(200).json({ message: "Ok", productEdited: newProduct });
+        }
     } else {
         const err = new HttpError("Something went wrong", 500);
         return next(err);

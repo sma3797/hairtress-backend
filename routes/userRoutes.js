@@ -25,7 +25,8 @@ router.post("/all-products", userControllers.allProducts);
 
 router.post("/email", [check("email").isEmail()], userControllers.email);
 
-router.use(checkAuth);
+// router.use(checkAuth);
+router.post("/recommended-products", userControllers.recommendedProducts);
 
 router.post("/get-user", userControllers.getUser);
 router.post(

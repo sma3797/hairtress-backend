@@ -5,7 +5,6 @@ const User = require("../models/user");
 const Quiz = require("../models/quiz");
 const Product = require("../models/product");
 const Order = require("../models/order");
-const Email = require("../models/email");
 const HttpError = require("../models/http-error").HttpError;
 
 const { validationResult } = require("express-validator");
@@ -15,9 +14,11 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const sendGrid = require("nodemailer-sendgrid-transport");
+const spawn = require("child_process").spawn;
 // const client = require("twilio")(process.env.ACCOUNTSID, process.env.AUTHTOKEN);
 
 const AWS = require("aws-sdk");
+const BUCKET_NAME_IMAGES = "images-rizipt";
 const s3 = new AWS.S3({
     accessKeyId: process.env.AWS_ID,
     secretAccessKey: process.env.SECRET,
@@ -30,7 +31,6 @@ const transporter = nodemailer.createTransport(
         },
     }),
 );
-
 function escapeRegex(text) {
     return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }
@@ -78,7 +78,7 @@ exports.signup = async (req, res, next) => {
         return next(err);
     } else {
         const newUser = new User({
-            email: email.toLowerCase(),
+            email,
             fname,
             lname,
             password: hashedPassword,
@@ -116,7 +116,7 @@ exports.login = async (req, res, next) => {
     let existingUser;
 
     try {
-        existingUser = await User.findOne({ email: email.toLowerCase() });
+        existingUser = await User.findOne({ email });
     } catch (error) {
         const err = new HttpError("Something went wrong, log in fails!", 500);
         return next(err);
@@ -224,39 +224,11 @@ exports.resetPassword = async (req, res, next) => {
         return next(new HttpError("Something went wrong! Try again later...", 500));
     }
 };
-exports.getUser = async (req, res, next) => {
-    let { userId } = req.body;
-    let existingUser;
-    console.log("userId", userId);
-    try {
-        existingUser = await User.findOne({ _id: userId });
-    } catch (error) {
-        const err = new HttpError("Something went wrong", 500);
-        return next(err);
-    }
-    if (!existingUser) {
-        return next(new HttpError("Something went wrong!", 500));
-    }
-    console.log("existingUser", existingUser);
-    res.status(200).json({
-        user: {
-            fname: existingUser.fname,
-            lname: existingUser.lname,
-            email: existingUser.email,
-            quiz: existingUser.quiz,
-            phone_number: existingUser.phone_number,
-            address: existingUser.address,
-            picture: existingUser.picture,
-        },
-    });
-};
 exports.changeInformation = async (req, res, next) => {
     const errors = validationResult(req);
     let { fname, lname, address, phone_number, userId } = req.body;
-    console.log("fname, lname, address, phone_number, userId", fname, lname, address, phone_number, userId);
     if (!errors.isEmpty()) {
         errors.errors.map((err) => {
-            console.log("err", err);
             if (err.param === "fname") {
                 return next(new HttpError("First Name is required", 422));
             }
@@ -276,7 +248,7 @@ exports.changeInformation = async (req, res, next) => {
     }
 
     const params = req.file && {
-        Bucket: process.env.BUCKET_NAME_IMAGES,
+        Bucket: BUCKET_NAME_IMAGES,
         Key: `${fname ? fname : existingUser.fname}-${req.file.filename}`, // File name you want to save as in S3
         Body: fileContent,
     };
@@ -287,11 +259,6 @@ exports.changeInformation = async (req, res, next) => {
                 throw err;
             } else if (data) {
                 console.log(`File uploadeded successfully. ${data.Location}`);
-                if (req.file) {
-                    fs.unlink(req.file.path, (err) => {
-                        console.log(err);
-                    });
-                }
                 if (existingUser) {
                     existingUser.fname = fname;
                     existingUser.lname = lname;
@@ -391,6 +358,19 @@ exports.changePassword = async (req, res, next) => {
 
 exports.quizSubmit = async (req, res, next) => {
     const { userId, answers } = req.body;
+    // const pythonProcess = spawn("python", [
+    //     "../ai/index.py",
+    //     answers.question_1,
+    //     answers.question_2,
+    //     answers.question_3,
+    //     answers.question_4,
+    //     answers.question_5,
+    // ]);
+
+    // pythonProcess.stdout.on("data", (data) => {
+    //     res.json({ message: "Ok", data: JSON.parse(data.toString()) });
+    // });
+    // return;
     let existingUser;
     try {
         existingUser = await User.findOne({ _id: userId });
@@ -412,13 +392,52 @@ exports.quizSubmit = async (req, res, next) => {
             const quiz_completed = await quiz.save();
             existingUser.quiz = quiz_completed._id;
             await existingUser.save();
-            res.json({ message: "Ok", quiz_completed: quiz_completed._id && true });
+            // const pythonProcess = spawn("python", [
+            //     "../ai/index.py",
+            //     answers.question_1,
+            //     answers.question_2,
+            //     answers.question_3,
+            //     answers.question_4,
+            //     answers.question_5,
+            // ]);
+
+            // pythonProcess.stdout.on("data", (data) => {
+            // });
+            res.json({ message: "Ok", quiz: existingUser.quiz ? true : false });
         } catch (error) {}
     } else {
         const err = new HttpError("User doesn't exist", 500);
         return next(err);
     }
 };
+
+exports.getUser = async (req, res, next) => {
+    let { userId } = req.body;
+    let existingUser;
+    console.log("userId", userId);
+    try {
+        existingUser = await User.findOne({ _id: userId });
+    } catch (error) {
+        const err = new HttpError("Something went wrong", 500);
+        return next(err);
+    }
+    if (!existingUser) {
+        return next(new HttpError("Something went wrong!", 500));
+    }
+    console.log("existingUser", existingUser);
+    res.status(200).json({
+        user: {
+            fname: existingUser.fname,
+            lname: existingUser.lname,
+            email: existingUser.email,
+            quiz: existingUser.quiz,
+            phone_number: existingUser.phone_number,
+            address: existingUser.address,
+            picture: existingUser.picture,
+        },
+    });
+};
+
 exports.email = async (req, res, next) => {
     const errors = validationResult(req);
     let email = true;
@@ -448,27 +467,27 @@ exports.email = async (req, res, next) => {
 exports.allProducts = async (req, res, next) => {
     const skip = req.query.skip && /^\d+$/.test(req.query.skip) ? Number(req.query.skip) : 0;
     const { query, type } = req.body;
-    console.log(query);
+    console.log("object", query, type, skip);
     const regex = new RegExp(escapeRegex(query ? query : ""), "gi");
     let products;
     try {
         if (type === "c")
-            products = await Product.find({ product_name: regex, crafts: true }, undefined, {
+            products = await Product.find({ name: regex, crafts: true }, undefined, {
                 skip,
                 limit: 10,
             }).sort({ createdAt: -1 });
         if (type === "p")
-            products = await Product.find({ product_name: regex, pros: true }, undefined, {
+            products = await Product.find({ name: regex, pros: true }, undefined, {
                 skip,
                 limit: 10,
             }).sort({ createdAt: -1 });
         if (type === "s")
-            products = await Product.find({ product_name: regex, studies: true }, undefined, {
+            products = await Product.find({ name: regex, studies: true }, undefined, {
                 skip,
                 limit: 10,
             }).sort({ createdAt: -1 });
         if (type === "pr")
-            products = await Product.find({ product_name: regex, products: true }, undefined, {
+            products = await Product.find({ name: regex, product: true }, undefined, {
                 skip,
                 limit: 10,
             }).sort({ createdAt: -1 });
@@ -477,6 +496,73 @@ exports.allProducts = async (req, res, next) => {
         return next(err);
     }
     res.status(200).json({ message: "Ok", products });
+};
+
+exports.recommendedProducts = async (req, res, next) => {
+    const skip = req.query.skip && /^\d+$/.test(req.query.skip) ? Number(req.query.skip) : 0;
+    const { query, type, userId } = req.body;
+
+    const regex = new RegExp(escapeRegex(query ? query : ""), "gi");
+    let existingUser;
+    try {
+        existingUser = await User.findOne({ _id: userId }).populate("quiz");
+    } catch (error) {
+        const err = new HttpError("Something went wrong", 500);
+        return next(err);
+    }
+    console.log("existingUser", existingUser);
+    let pros = [],
+        crafts = [],
+        studies = [],
+        product = [],
+        products = [];
+    if (existingUser.quiz) {
+        const pythonProcess = spawn("python", [
+            "../ai/index.py",
+            existingUser.quiz.question_1,
+            existingUser.quiz.question_2,
+            existingUser.quiz.question_3,
+            existingUser.quiz.question_4,
+            existingUser.quiz.question_5,
+        ]);
+
+        pythonProcess.stdout.on("data", async (data) => {
+            let dataJSON = JSON.parse(data.toString());
+            pros = dataJSON.salon.map((i) => i._id);
+            crafts = dataJSON.video.map((i) => i._id);
+            studies = dataJSON.article.map((i) => i._id);
+            product = dataJSON.product.map((i) => mongoose.Types.ObjectId(i._id));
+            try {
+                if (type === "c")
+                    products = await Product.find({ _id: { $in: crafts }, name: regex, crafts: true }, undefined, {
+                        skip,
+                        limit: 10,
+                    }).sort({ createdAt: -1 });
+                if (type === "p")
+                    products = await Product.find({ _id: { $in: pros }, name: regex, pros: true }, undefined, {
+                        skip,
+                        limit: 10,
+                    }).sort({ createdAt: -1 });
+                if (type === "s")
+                    products = await Product.find({ _id: { $in: studies }, name: regex, studies: true }, undefined, {
+                        skip,
+                        limit: 10,
+                    }).sort({ createdAt: -1 });
+                if (type === "pr")
+                    products = await Product.find({ _id: { $in: product }, name: regex, product: true }, undefined, {
+                        skip,
+                        limit: 10,
+                    }).sort({ createdAt: -1 });
+                res.status(200).json({ message: "Ok", products });
+            } catch (error) {
+                const err = new HttpError("Something went wrong", 500);
+                return next(err);
+            }
+        });
+    } else {
+        const err = new HttpError("Something went wrong", 500);
+        return next(err);
+    }
 };
 
 exports.fetchCart = async (req, res, next) => {};

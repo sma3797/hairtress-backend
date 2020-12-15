@@ -3,6 +3,7 @@ const Admin = require("../models/admin");
 
 module.exports = async (req, res, next) => {
     const { userId } = req.body;
+    console.log("yusdasd", userId);
     if (req.method === "OPTIONS") {
         return next();
     }

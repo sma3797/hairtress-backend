@@ -15,6 +15,7 @@ const fileUpload = multer({
             cb(null, "uploads/images");
         },
         filename: (req, file, cb) => {
+            req.userData = { fileKey: req.body.userId + uuidv4() + file.originalname.replace(/\s/g, "-") };
             const ext = MIME_TYPE_MAP[file.mimetype];
             cb(null, uuidv4() + "." + ext);
         },
