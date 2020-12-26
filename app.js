@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const cors = require("cors");
 const readXlsxFile = require("read-excel-file/node");
 require("dotenv").config();
 
@@ -13,9 +14,9 @@ const HttpError = require("./models/http-error").HttpError;
 
 const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-const { assert } = require("console");
 
 const app = express();
+app.use(cors());
 
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
@@ -33,11 +34,6 @@ app.use("/user", userRoutes);
 app.use("/admin", adminRoutes);
 
 app.use((req, res, next) => {
-    // res.sendFile(path.resolve(__dirname, "public", "index.html"));
-    res.json({ message: "" });
-});
-
-app.use((req, res, next) => {
     const error = new HttpError("Route couldn't found", 404);
     throw error;
 });
@@ -45,7 +41,7 @@ app.use((req, res, next) => {
 app.use((error, req, res, next) => {
     // if (req.file) {
     //     fs.unlink(req.file.path, (err) => {
-    //         console.log(err);
+    //         // console.log(err);
     //     });
     // }
     const status = error.statusCode || 500;
@@ -57,10 +53,6 @@ app.use((error, req, res, next) => {
 mongoose.set("useCreateIndex", true);
 const mongooseOptions = {
     useNewUrlParser: true,
-    // autoReconnect: true,
-    // poolSize: 25,
-    // connectTimeoutMS: 30000,
-    // socketTimeoutMS: 30000,
     useUnifiedTopology: true,
 };
 
@@ -76,9 +68,9 @@ mongoose
         // const products = await Product.find({ crafts: true }).sort({ createdAt: 1 });
         // const products = await Product.find({ pros: true }).sort({ createdAt: 1 });
         // const products = await Product.find({ studies: true }).sort({ createdAt: 1 });
-        // products.map((i) => console.log(i._id, i.name));
+        // products.map((i) => // console.log(i._id, i.name));
         // readXlsxFile("./product.xlsx").then((rows) => {
-        //     // console.log("rows", rows);
+        //     // // console.log("rows", rows);
         //     rows.map(async (i) => {
         //         let productToCreate = new Product({
         //             name: i[0],
@@ -91,16 +83,16 @@ mongoose
         //             link2: i[8],
         //             link3: i[9],
         //         });
-        //         console.log(productToCreate);
+        //         // console.log(productToCreate);
         //         try {
         //             // const newProduct = await productToCreate.save();
         //         } catch (error) {
-        //             console.log("error", error);
+        //             // console.log("error", error);
         //         }
         //     });
         // });
         // readXlsxFile("./crafts.xlsx").then((rows) => {
-        //     // console.log("rows", rows);
+        //     // // console.log("rows", rows);
         //     rows.map(async (i) => {
         //         let productToCreate = new Product({
         //             name: i[0],
@@ -112,11 +104,11 @@ mongoose
         //             length: i[3],
         //             creator: i[8],
         //         });
-        //         console.log(productToCreate);
+        //         // console.log(productToCreate);
         //         try {
         //             // const newProduct = await productToCreate.save();
         //         } catch (error) {
-        //             console.log("error", error);
+        //             // console.log("error", error);
         //         }
         //     });
         // });
@@ -131,11 +123,11 @@ mongoose
         //             link1: i[1],
         //             length: i[3],
         //         });
-        //         console.log(productToCreate);
+        //         // console.log(productToCreate);
         //         try {
         //             // const newProduct = await productToCreate.save();
         //         } catch (error) {
-        //             console.log("error", error);
+        //             // console.log("error", error);
         //         }
         //     });
         // });
@@ -149,15 +141,15 @@ mongoose
         //             link1: i[1],
         //             length: i[3],
         //         });
-        //         console.log(productToCreate);
+        //         // console.log(productToCreate);
         //         try {
         //             // const newProduct = await productToCreate.save();
         //         } catch (error) {
-        //             console.log("error", error);
+        //             // console.log("error", error);
         //         }
         //     });
         // });
     })
     .catch((err) => {
-        console.log("Error", err);
+        // console.log("Error", err);
     });

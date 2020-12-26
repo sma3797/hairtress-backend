@@ -151,6 +151,7 @@ exports.login = async (req, res, next) => {
         fname: existingUser.fname,
         lname: existingUser.lname,
         email: existingUser.email,
+        quiz: existingUser.quiz ? true : false,
         phone_number: existingUser.phone_number,
         hair_data: existingUser.hair_data,
         hair_type: existingUser.hair_type,
@@ -258,7 +259,7 @@ exports.changeInformation = async (req, res, next) => {
             if (err) {
                 throw err;
             } else if (data) {
-                console.log(`File uploadeded successfully. ${data.Location}`);
+                // console.log(`File uploadeded successfully. ${data.Location}`);
                 if (existingUser) {
                     existingUser.fname = fname;
                     existingUser.lname = lname;
@@ -281,7 +282,7 @@ exports.changeInformation = async (req, res, next) => {
             }
             if (req.file) {
                 fs.unlink(req.file.path, (err) => {
-                    console.log(err);
+                    // console.log(err);
                 });
             }
         });
@@ -414,7 +415,7 @@ exports.quizSubmit = async (req, res, next) => {
 exports.getUser = async (req, res, next) => {
     let { userId } = req.body;
     let existingUser;
-    console.log("userId", userId);
+    // console.log("userId", userId);
     try {
         existingUser = await User.findOne({ _id: userId });
     } catch (error) {
@@ -424,7 +425,7 @@ exports.getUser = async (req, res, next) => {
     if (!existingUser) {
         return next(new HttpError("Something went wrong!", 500));
     }
-    console.log("existingUser", existingUser);
+    // console.log("existingUser", existingUser);
     res.status(200).json({
         user: {
             fname: existingUser.fname,
@@ -467,7 +468,7 @@ exports.email = async (req, res, next) => {
 exports.allProducts = async (req, res, next) => {
     const skip = req.query.skip && /^\d+$/.test(req.query.skip) ? Number(req.query.skip) : 0;
     const { query, type } = req.body;
-    console.log("object", query, type, skip);
+    // console.log("object", query, type, skip);
     const regex = new RegExp(escapeRegex(query ? query : ""), "gi");
     let products;
     try {
@@ -495,6 +496,7 @@ exports.allProducts = async (req, res, next) => {
         const err = new HttpError("Something went wrong", 500);
         return next(err);
     }
+    // console.log("products", products.length);
     res.status(200).json({ message: "Ok", products });
 };
 
@@ -510,13 +512,16 @@ exports.recommendedProducts = async (req, res, next) => {
         const err = new HttpError("Something went wrong", 500);
         return next(err);
     }
-    console.log("existingUser", existingUser);
+    console.log("existingUser", existingUser._id, userId);
     let pros = [],
         crafts = [],
         studies = [],
         product = [],
         products = [];
-    if (existingUser.quiz) {
+    if (!existingUser) {
+        const err = new HttpError("Something went wrong", 500);
+        return next(err);
+    } else if (existingUser.quiz) {
         const pythonProcess = spawn("python", [
             "../ai/index.py",
             existingUser.quiz.question_1,

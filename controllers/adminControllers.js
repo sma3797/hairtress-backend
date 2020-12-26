@@ -273,9 +273,10 @@ exports.changePassword = async (req, res, next) => {
 
 // --------------------------------- Products
 exports.allUsers = async (req, res, next) => {
+    const skip = req.query.skip && /^\d+$/.test(req.query.skip) ? Number(req.query.skip) : 0;
     let users;
     try {
-        users = await User.find({}, undefined, {}).sort({ createdAt: -1 });
+        users = await User.find({}, undefined, { limit: 20, skip }).sort({ createdAt: -1 });
     } catch (error) {
         const err = new HttpError("Something went wrong", 500);
         return next(err);
@@ -295,7 +296,7 @@ exports.allEmails = async (req, res, next) => {
 
 exports.addProductType = async (req, res, next) => {
     const type = req.query.type;
-    console.log(type);
+    // console.log(type);
     // const productType = type.toString().substring(1, type.length - 1);
     const newProductType = new ProductType({
         type: type,
@@ -324,7 +325,7 @@ exports.addProductTag = async (req, res, next) => {
 };
 exports.addProductCompany = async (req, res, next) => {
     const type = req.query.type;
-    console.log(type);
+    // console.log(type);
     const newProductType = new ProductCompany({
         type: type,
     });
@@ -353,7 +354,7 @@ exports.addProductBestHairType = async (req, res, next) => {
 exports.editProductType = async (req, res, next) => {
     const { _id, type } = req.body;
 
-    console.log(" _id, type", _id, type);
+    // console.log(" _id, type", _id, type);
     let toEdit;
     try {
         toEdit = await ProductType.findOne({ _id });
@@ -377,7 +378,7 @@ exports.editProductType = async (req, res, next) => {
 exports.editProductTag = async (req, res, next) => {
     const { _id, type } = req.body;
 
-    console.log(" _id, type", _id, type);
+    // console.log(" _id, type", _id, type);
     let toEdit;
     try {
         toEdit = await ProductTag.findOne({ _id });
@@ -401,7 +402,7 @@ exports.editProductTag = async (req, res, next) => {
 exports.editProductCompany = async (req, res, next) => {
     const { _id, type } = req.body;
 
-    console.log(" _id, type", _id, type);
+    // console.log(" _id, type", _id, type);
     let toEdit;
     try {
         toEdit = await ProductCompany.findOne({ _id });
@@ -425,7 +426,7 @@ exports.editProductCompany = async (req, res, next) => {
 exports.editProductBestHairType = async (req, res, next) => {
     const { _id, type } = req.body;
 
-    console.log(" _id, type", _id, type);
+    // console.log(" _id, type", _id, type);
     let toEdit;
     try {
         toEdit = await ProductBestHairType.findOne({ _id });
@@ -449,7 +450,7 @@ exports.editProductBestHairType = async (req, res, next) => {
 
 // exports.allProducts = async (req, res, next) => {
 //     const skip = req.query.skip && /^\d+$/.test(req.query.skip) ? Number(req.query.skip) : 0;
-//     console.log("request", req.body);
+//     // console.log("request", req.body);
 //     const { query } = req.body;
 //     const regex = new RegExp(escapeRegex(query ? query : ""), "gi");
 //     let products;
@@ -468,7 +469,7 @@ exports.editProductBestHairType = async (req, res, next) => {
 exports.allProducts = async (req, res, next) => {
     const skip = req.query.skip && /^\d+$/.test(req.query.skip) ? Number(req.query.skip) : 0;
     const { query, type } = req.body;
-    console.log("req.body", req.body);
+    // console.log("req.body", req.body);
     const regex = new RegExp(escapeRegex(query ? query : ""), "gi");
     let products;
     try {
@@ -555,7 +556,7 @@ exports.addProduct = async (req, res, next) => {
                     const newProduct = await productToCreate.save();
                     res.status(200).json({ message: "Ok", newProduct });
                 } catch (error) {
-                    console.log("error", error);
+                    // console.log("error", error);
                     const err = new HttpError("Something went wrong", 500);
                     return next(err);
                 }
@@ -564,7 +565,7 @@ exports.addProduct = async (req, res, next) => {
                         fs.unlink(req.file.path, (err) => {});
                     }
                 } catch (error) {
-                    console.log("error", error);
+                    // console.log("error", error);
                     const err = new HttpError("Something went wrong", 500);
                     return next(err);
                 }
@@ -594,13 +595,14 @@ exports.addProduct = async (req, res, next) => {
             const newProduct = await productToCreate.save();
             res.status(200).json({ message: "Ok", newProduct });
         } catch (error) {
-            console.log("error", error);
+            // console.log("error", error);
             const err = new HttpError("Something went wrong", 500);
             return next(err);
         }
     }
 };
 exports.editProduct = async (req, res, next) => {
+    let productToFind;
     const {
         productId,
         name,
@@ -619,7 +621,6 @@ exports.editProduct = async (req, res, next) => {
         processing,
         creator,
         length,
-        picture,
         desc,
     } = req.body;
     const fileContent = req.file && fs.readFileSync(req.file.path);
@@ -629,36 +630,37 @@ exports.editProduct = async (req, res, next) => {
         Body: fileContent,
     };
     try {
-        product = await Product.findOne({ _id: productId });
+        productToFind = await Product.findOne({ _id: productId });
     } catch (error) {
         const err = new HttpError("Something went wrong", 500);
         return next(err);
     }
-    if (product) {
+    // console.log("product", productToFind);
+    if (productToFind) {
         if (fileContent) {
             s3.upload(params, async (err, data) => {
                 if (err) {
                     throw err;
                 } else if (data) {
-                    product.name = name ? name : undefined;
-                    product.pros = pros ? pros : undefined;
-                    product.crafts = crafts ? crafts : undefined;
-                    product.product = product ? product : undefined;
-                    product.studies = studies ? studies : undefined;
-                    product.product_type = product_type ? product_type : undefined;
-                    product.hair_type = hair_type ? hair_type : undefined;
-                    product.density = density ? density : undefined;
-                    product.porosity = porosity ? porosity : undefined;
-                    product.link1 = link1 ? link1 : undefined;
-                    product.link2 = link2 ? link2 : undefined;
-                    product.link3 = link3 ? link3 : undefined;
-                    product.product_company = product_company ? product_company : undefined;
-                    product.processing = processing ? processing : undefined;
-                    product.creator = creator ? creator : undefined;
-                    product.length = length ? length : undefined;
-                    product.picture = picture ? picture : undefined;
-                    product.desc = desc ? desc : undefined;
-                    const newProduct = await product.save();
+                    productToFind.name = name ? name : undefined;
+                    productToFind.pros = pros ? pros : undefined;
+                    productToFind.crafts = crafts ? crafts : undefined;
+                    productToFind.product = product ? product : undefined;
+                    productToFind.studies = studies ? studies : undefined;
+                    productToFind.product_type = product_type ? product_type : undefined;
+                    productToFind.hair_type = hair_type ? hair_type : undefined;
+                    productToFind.density = density ? density : undefined;
+                    productToFind.porosity = porosity ? porosity : undefined;
+                    productToFind.link1 = link1 ? link1 : undefined;
+                    productToFind.link2 = link2 ? link2 : undefined;
+                    productToFind.link3 = link3 ? link3 : undefined;
+                    productToFind.product_company = product_company ? product_company : undefined;
+                    productToFind.processing = processing ? processing : undefined;
+                    productToFind.creator = creator ? creator : undefined;
+                    productToFind.length = length ? length : undefined;
+                    productToFind.picture = data.Location;
+                    productToFind.desc = desc ? desc : undefined;
+                    const newProduct = await productToFind.save();
                     res.status(200).json({ message: "Ok", productEdited: newProduct });
                     try {
                         if (req.file) {
@@ -671,24 +673,23 @@ exports.editProduct = async (req, res, next) => {
                 }
             });
         } else {
-            product.name = name ? name : undefined;
-            product.pros = pros ? pros : undefined;
-            product.crafts = crafts ? crafts : undefined;
-            product.product = product ? product : undefined;
-            product.studies = studies ? studies : undefined;
-            product.product_type = product_type ? product_type : undefined;
-            product.hair_type = hair_type ? hair_type : undefined;
-            product.density = density ? density : undefined;
-            product.porosity = porosity ? porosity : undefined;
-            product.link1 = link1 ? link1 : undefined;
-            product.link2 = link2 ? link2 : undefined;
-            product.link3 = link3 ? link3 : undefined;
-            product.product_company = product_company ? product_company : undefined;
-            product.processing = processing ? processing : undefined;
-            product.creator = creator ? creator : undefined;
-            product.length = length ? length : undefined;
-            product.picture = picture ? picture : undefined;
-            const newProduct = await product.save();
+            productToFind.name = name ? name : undefined;
+            productToFind.pros = pros ? pros : undefined;
+            productToFind.crafts = crafts ? crafts : undefined;
+            productToFind.product = product ? product : undefined;
+            productToFind.studies = studies ? studies : undefined;
+            productToFind.product_type = product_type ? product_type : undefined;
+            productToFind.hair_type = hair_type ? hair_type : undefined;
+            productToFind.density = density ? density : undefined;
+            productToFind.porosity = porosity ? porosity : undefined;
+            productToFind.link1 = link1 ? link1 : undefined;
+            productToFind.link2 = link2 ? link2 : undefined;
+            productToFind.link3 = link3 ? link3 : undefined;
+            productToFind.product_company = product_company ? product_company : undefined;
+            productToFind.processing = processing ? processing : undefined;
+            productToFind.creator = creator ? creator : undefined;
+            productToFind.length = length ? length : undefined;
+            const newProduct = await productToFind.save();
             res.status(200).json({ message: "Ok", productEdited: newProduct });
         }
     } else {
@@ -698,7 +699,7 @@ exports.editProduct = async (req, res, next) => {
 };
 exports.deleteProduct = async (req, res, next) => {
     const { productId } = req.body;
-    console.log("productId", productId);
+    // console.log("productId", productId);
     let product;
     try {
         product = await Product.findOne({ _id: productId });
